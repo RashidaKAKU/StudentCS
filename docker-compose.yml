@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+    volumes:
+      # 挂载整个backend目录，但排除node_modules目录，确保容器使用镜像中安装的依赖
+      - ./backend:/app
+      - /app/node_modules
+      # 挂载前端目录，确保静态文件服务正常
+      - ./frontend:/app/frontend
+      # 单独挂载数据库文件，确保数据持久化
+      - ./backend/students.db:/app/students.db
+    restart: unless-stopped
+    # 添加健康检查，提高服务可靠性
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => { process.exit(1); });"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
